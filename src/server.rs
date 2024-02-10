@@ -43,8 +43,11 @@ pub fn server_events(mut commands: Commands,
     for event in events.read() {
         match event {
             ServerEvent::ClientConnected{client_id} => {
+                println!("Connected {}!", client_id);
+
+                let starting_position = Transform::default();
                 let player_entity = commands.spawn((
-                    Transform::default(),
+                    starting_position,
                     Player {
                         speed: 400.0,
                         client_id: *client_id,
@@ -62,14 +65,22 @@ pub fn server_events(mut commands: Commands,
                 // Add the player we just created
                 spawn_players_map.insert(*client_id, Vec3::ZERO);
 
-                // Add the players that already existed
-                for (player, transform) in query.iter() {
-                    spawn_players_map.insert(player.client_id, transform.translation);
-                }
-                let init_message = bincode::serialize(&InitCommand::SpawnPlayers { players: spawn_players_map }).unwrap();
-                server.send_message(*client_id, DefaultChannel::ReliableOrdered, init_message);
-                println!("Connected {}!", client_id);
+                // Send the message about the player that just connected
+                // to the player that just connected
+                let connected_player_message = bincode::serialize(&InitCommand::PlayerConnected { client_id: *client_id, position: starting_position.translation }).unwrap();
+                server.send_message(*client_id, DefaultChannel::ReliableOrdered, connected_player_message);
 
+
+
+                for (player, transform) in query.iter() {
+                    // Send the message about existing player to the newly joined player
+                    let existing_player_message = bincode::serialize(&InitCommand::PlayerConnected { client_id: player.client_id, position: transform.translation }).unwrap();
+                    server.send_message(*client_id, DefaultChannel::ReliableOrdered, existing_player_message);
+
+                    // Send message about new player to existing player
+                    let new_player_message = bincode::serialize(&InitCommand::PlayerConnected { client_id: *client_id, position: starting_position.translation }).unwrap();
+                    server.send_message(player.client_id, DefaultChannel::ReliableOrdered, new_player_message);
+                }
             },
             ServerEvent::ClientDisconnected{client_id, reason: _} => println!("Disconnected {}!", client_id),
         }

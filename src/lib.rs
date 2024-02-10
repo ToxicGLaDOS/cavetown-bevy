@@ -15,7 +15,10 @@ pub struct Lobby {
 
 #[derive(Debug, Serialize, Deserialize, Component, Event)]
 pub enum InitCommand {
-    SpawnPlayers {players: HashMap<ClientId, Vec3>}
+    PlayerConnected {
+        client_id: ClientId,
+        position: Vec3
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Component, Event)]

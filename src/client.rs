@@ -114,14 +114,11 @@ pub fn client_initalize(mut commands: Commands, mut client: ResMut<RenetClient>,
     while let Some(message) = client.receive_message(DefaultChannel::ReliableOrdered) {
         let command: InitCommand = bincode::deserialize(&message).unwrap();
         match command {
-            InitCommand::SpawnPlayers { players } => {
-                println!("Spawn player");
-                for (client_id, _translation) in players.iter() {
-                    let player_entity = spawn_player(&mut commands, &asset_server, &mut texture_atlases, *client_id);
+            InitCommand::PlayerConnected { client_id, position } => {
+                let player_entity = spawn_player(&mut commands, &asset_server, &mut texture_atlases, client_id, position);
 
-                    info!("Inserting player {}", client_id);
-                    lobby.players.insert(*client_id, player_entity);
-                }
+                info!("Inserting player {}", client_id);
+                lobby.players.insert(client_id, player_entity);
             }
         }
     }
@@ -151,7 +148,8 @@ pub fn client_sync_system(mut commands: Commands, mut client: ResMut<RenetClient
 pub fn spawn_player(commands: &mut Commands,
     asset_server: &Res<AssetServer>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-    client_id: ClientId
+    client_id: ClientId,
+    position: Vec3
     ) -> Entity {
     let img_path ="character.png".to_string();
 
@@ -162,14 +160,17 @@ pub fn spawn_player(commands: &mut Commands,
 
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
+    let transform = Transform::from_translation(position);
+    
     let player_entity = commands.spawn(
         ClientPlayerBundle {
             sprite: SpriteSheetBundle {
+                transform,
                 sprite: TextureAtlasSprite{
                     index : 0,
                       ..default()
                 },
-                texture_atlas: texture_atlas_handle.clone(), 
+                texture_atlas: texture_atlas_handle.clone(),
                 ..default()
             },
             name: Name::new(format!("Player {}", client_id))
