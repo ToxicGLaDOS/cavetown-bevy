@@ -8,9 +8,10 @@ use bevy_renet::{
 };
 use std::{
     collections::HashMap,
-    net::{IpAddr, UdpSocket},
+    net::{IpAddr, UdpSocket, Ipv4Addr},
     time::SystemTime
 };
+use local_ip_address::local_ip;
 
 use cavetown::*;
 
@@ -191,8 +192,13 @@ pub fn add_client(app: &mut App, ip: IpAddr, port: u16) {
     let client = RenetClient::new(ConnectionConfig::default());
 
     let server_addr = format!("{}:{}", ip, port).parse().unwrap();
-    //let local_bind_address = format!("{}:0", local_ip().unwrap());
-    let local_bind_address = format!("{}:0", ip);
+    let local_bind_address;
+
+    if ip.is_loopback() {
+        local_bind_address = format!("{}:0", Ipv4Addr::LOCALHOST);
+    } else {
+        local_bind_address = format!("{}:0", local_ip().unwrap());
+    }
     info!("binding to {}", local_bind_address);
     info!("connecting to {}:{}", ip, port);
     let socket = UdpSocket::bind(local_bind_address).unwrap();

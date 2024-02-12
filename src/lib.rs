@@ -13,7 +13,7 @@ pub struct Lobby {
     pub players: HashMap<ClientId, Entity>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Component, Event)]
+#[derive(Debug, Serialize, Deserialize, Event)]
 pub enum InitCommand {
     PlayerConnected {
         client_id: ClientId,
@@ -21,7 +21,7 @@ pub enum InitCommand {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Component, Event)]
+#[derive(Debug, Serialize, Deserialize, Event)]
 pub enum PlayerCommand {
     PlayerMove { direction: Vec3 }
 }
